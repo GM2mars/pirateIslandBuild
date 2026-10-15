@@ -36,6 +36,47 @@
 
   <link rel="stylesheet" type="text/css" href="style.f76d1.css"/>
 
+  <!--
+    On-screen keyboard: the webview gets shorter and fires `resize`; the engine would shrink the game to the free
+    area. Swallow the resize while a text field is focused (and just after it blurs, while the keyboard slides away)
+    when only the height fell and the width is the same, so the keyboard covers the game instead. Runs before the
+    engine registers its own listener; a capture listener on window goes first.
+  -->
+  <script>
+    (function () {
+      var DROP_PX = 80;
+      var HOLD_MS = 700;
+      var stableW = window.innerWidth;
+      var stableH = window.innerHeight;
+      var holdUntil = 0;
+
+      function typing() {
+        var el = document.activeElement;
+        var tag = el && el.tagName;
+
+        return tag === 'INPUT' || tag === 'TEXTAREA';
+      }
+
+      document.addEventListener('focusout', function () {
+        holdUntil = Date.now() + HOLD_MS;
+      }, true);
+
+      window.addEventListener('resize', function (event) {
+        var w = window.innerWidth;
+        var h = window.innerHeight;
+        var keyboard = w === stableW && h < stableH - DROP_PX && (typing() || Date.now() < holdUntil);
+
+        if (keyboard) {
+          event.stopImmediatePropagation();
+          return;
+        }
+
+        stableW = w;
+        stableH = h;
+      }, true);
+    })();
+  </script>
+
 </head>
 <body>
   <div id="GameDiv" cc_exact_fit_screen="true">
